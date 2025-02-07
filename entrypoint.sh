@@ -1,7 +1,5 @@
 #!/bin/bash
 
-MODEL=qwen:0.5b
-
 echo "Starting ollama..."
 
 export OLLAMA_ORIGINS=*
@@ -18,22 +16,27 @@ done
 echo
 echo "OLLAMA ready"
 
-ollama pull $MODEL
+echo "Pulling model $MODEL..."
+ollama pull "$MODEL"
 
 echo "Stopping ollama..."
 kill "$serverpid" && wait "$serverpid"
 
+model_name="$(echo "$MODEL" | tr ':' '-')"
+mpk_file="/output/$model_name.mpk"
+info_file="/output/$model_name.info"
+
 echo "Generating erofs image..."
-mkfs.erofs /output/model.erofs /opt/ollama
+mkfs.erofs "$mpk_file" /opt/ollama
 
 echo "Computing alignment..."
-SIZE=$(stat -c %s /output/model.erofs)
+SIZE=$(stat -c %s "$mpk_file")
 HASH_OFFSET=$(( (($SIZE + 4095) / 4096) * 4096 ))
 
 echo "Running veritysetup..."
 veritysetup \
   --hash-offset="$HASH_OFFSET" \
-  --root-hash-file=/output/model.info \
-  format /output/model.erofs /output/model.erofs
+  --root-hash-file="$info_file" \
+  format "$mpk_file" "$mpk_file"
 
-echo "-$HASH_OFFSET" >> /output/model.info
+echo "-$HASH_OFFSET" >> "$info_file"
