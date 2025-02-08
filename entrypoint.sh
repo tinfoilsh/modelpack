@@ -27,8 +27,7 @@ mpk_file="/output/$model_name.mpk"
 info_file="/output/$model_name.info"
 
 string_to_uuid() {
-  # This is really horrific. It's a consistent way to generate a UUID from an arbitrary-length input
-  echo "1" | sha1sum | cut -c1-32 | sed 's/\([0-9a-f]\{8\}\)\([0-9a-f]\{4\}\)\([0-9a-f]\{4\}\)\([0-9a-f]\{4\}\)\([0-9a-f]\{12\}\)/\1-\2-\3-\4-\5/'
+  python3 -c "import uuid, sys; print(uuid.uuid5(uuid.NAMESPACE_DNS, sys.argv[1]))" "$1"
 }
 
 echo "Generating erofs image..."
