@@ -1,6 +1,6 @@
 # Ollama Model Pack
 
-Builds dm-verity EROFS images of ollama models.
+Builds reproducible dm-verity EROFS images of ollama models.
 
 ## Pack image
 
