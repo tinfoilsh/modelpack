@@ -5,7 +5,7 @@ Builds reproducible dm-verity EROFS images of ollama models.
 ## Pack image
 
 ```bash
-docker run --rm -v $(pwd)/output:/output -e MODEL=llama3.3:70b ghcr.io/tinfoilanalytics/modelpack
+docker run --rm -v $(pwd)/output:/output -e MODEL=llama3.3:70b ghcr.io/tinfoilsh/modelpack
 ```
 
 `modelpack` emits two files in the output directory, where MODEL is the the name of the model (replacing the colon with a dash):
