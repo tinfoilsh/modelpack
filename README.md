@@ -1,22 +1,21 @@
-# Ollama Model Pack
+# Hugging Face Model Pack
 
-Builds reproducible dm-verity EROFS images of ollama models.
+Builds reproducible dm-verity EROFS images of Hugging Face models.
 
 ## Pack image
 
 ```bash
-docker run --rm -v $(pwd)/output:/output -e MODEL=llama3.3:70b ghcr.io/tinfoilsh/modelpack
+docker run --rm -it \
+		-v $(shell pwd)/cache:/cache \
+		-v $(shell pwd)/output:/output \
+		-e HF_TOKEN=${HF_TOKEN} \
+		-e MODEL=meta-llama/Llama-3.2-1B@4e20de362430cd3b72f300e6b0f18e50e7166e08 \
+		ghcr.io/tinfoilsh/modelpack
 ```
 
-`modelpack` emits two files in the output directory, where MODEL is the the name of the model (replacing the colon with a dash):
-- `MODEL.mpk`: dm-verity EROFS image
-- `MODEL.info`: metadata file in the format `SHA256_HASH-OFFSET`
+You may ommit the `@revision` suffix to instruct modelpack to retrieve the latest commit of the first branch.
 
-## Mount image
+`modelpack` emits two files in the output directory:
 
-```bash
-veritysetup open /dev/sdc model_verity /dev/sdc \
-    $(cut -d '-' -f 1 llama3.3-70b.info) \
-    --hash-offset=$(cut -d '-' -f 2 llama3.3-70b.info)
-mount -o ro /dev/mapper/model_verity /mnt
-```
+- `output/meta-llama/Llama-3.2-1B/4e20de362430cd3b72f300e6b0f18e50e7166e08.mpk`: dm-verity EROFS image
+- `output/meta-llama/Llama-3.2-1B/4e20de362430cd3b72f300e6b0f18e50e7166e08.info`: metadata file in the format `SHA256_HASH-OFFSET`
