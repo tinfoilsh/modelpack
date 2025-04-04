@@ -1,2 +1,5 @@
 .idea/
 output/
+cache/
+venv/
+.env
