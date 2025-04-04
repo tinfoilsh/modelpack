@@ -11,6 +11,9 @@ COPY pack.py .
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
+ENV CACHE_DIR="/cache"
+ENV OUTPUT_DIR="/output"
+
 RUN pip install --no-cache-dir -r requirements.txt
 
 CMD ["python3", "pack.py"]

@@ -18,4 +18,4 @@ You may ommit the `@revision` suffix to instruct modelpack to retrieve the lates
 `modelpack` emits two files in the output directory:
 
 - `output/meta-llama/Llama-3.2-1B/4e20de362430cd3b72f300e6b0f18e50e7166e08.mpk`: dm-verity EROFS image
-- `output/meta-llama/Llama-3.2-1B/4e20de362430cd3b72f300e6b0f18e50e7166e08.info`: metadata file in the format `SHA256_HASH-OFFSET`
+- `output/meta-llama/Llama-3.2-1B/4e20de362430cd3b72f300e6b0f18e50e7166e08.info`: metadata file in the format `ROOTHASH_OFFSET_VERITYUUID`

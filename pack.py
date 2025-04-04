@@ -6,8 +6,8 @@ import shutil
 from hashlib import sha256
 from huggingface_hub import snapshot_download, HfApi
 
-cache_dir = "/cache"
-output_dir = "/output"
+cache_dir = os.getenv("CACHE_DIR") or "cache"
+output_dir = os.getenv("OUTPUT_DIR") or "output"
 
 model = os.getenv("MODEL")
 if not model:
@@ -76,10 +76,12 @@ if not os.path.exists(info_file):
     size = os.path.getsize(mpk_file)
     offset = (size + 4095) // 4096 * 4096
 
+    verity_uuid = uuid.uuid5(uuid.NAMESPACE_URL, model+'-inner')
+
     veritysetup_cmd = [
         "veritysetup",
         f"--salt={sha256(model.encode()).hexdigest()}",
-        f"--uuid={uuid.uuid5(uuid.NAMESPACE_URL, model+'-inner')}",
+        f"--uuid={verity_uuid}",
         f"--hash-offset={offset}",
         f"--root-hash-file={info_file}",
         "format",
@@ -93,7 +95,7 @@ if not os.path.exists(info_file):
         raise Exception(f"Failed to create dm-verity info file {info_file}")
 
     with open(info_file, "a") as f:
-        f.write(f"-{offset}")
+        f.write(f"_{offset}_{verity_uuid}")
 else:
     print(f"dm-verity volume already exists at {mpk_file}")
 
