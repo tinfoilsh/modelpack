@@ -6,10 +6,13 @@ clean:
 build:
 	docker build -t tinfoil-modelpack .
 
-run:
+pack:
 	docker run --rm -it \
 		-v $(shell pwd)/cache:/cache \
-		-v $(shell pwd)/output:/output \
+		-v /opt/tinfoil/hfmodels:/output \
 		-e HF_TOKEN=${HF_TOKEN} \
-		-e MODEL=meta-llama/Llama-3.2-1B@4e20de362430cd3b72f300e6b0f18e50e7166e08 \
+		-e MODEL=$(word 2,$(MAKECMDGOALS)) \
 		tinfoil-modelpack
+
+%:
+	@:
