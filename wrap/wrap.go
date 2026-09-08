@@ -69,11 +69,11 @@ func Pack(opts Options) (string, error) {
 	}
 	fmt.Printf("Packing under schema %d (erofs-utils %s, %s)\n", schema.ID, schema.ErofsUtils, schema.Doc)
 
-	model, modelDir, err := resolveModel(opts)
+	modelName, modelCommit, modelDir, err := resolveModel(opts)
 	if err != nil {
 		return "", err
 	}
-	modelName, modelCommit, _ := strings.Cut(model, "@")
+	model := modelName + "@" + modelCommit
 
 	outputModelDir := filepath.Join(opts.OutputDir, modelName)
 	base := filepath.Join(outputModelDir, modelCommit)
@@ -189,62 +189,48 @@ func Pack(opts Options) (string, error) {
 
 // resolveModel determines the model@revision identity and the directory
 // containing the model files.
-func resolveModel(opts Options) (model, modelDir string, err error) {
-	model = opts.Model
+func resolveModel(opts Options) (name, revision, modelDir string, err error) {
+	name, revision, _ = strings.Cut(opts.Model, "@")
 
-	if opts.ModelDir != "" {
-		fi, err := os.Stat(opts.ModelDir)
-		if err != nil || !fi.IsDir() {
-			return "", "", fmt.Errorf("MODEL_DIR is not a directory: %s", opts.ModelDir)
+	if opts.ModelDir == "" {
+		if name == "" {
+			return "", "", "", fmt.Errorf("model argument or MODEL environment variable is required")
 		}
-		localRevision, err := modelwrap.HashDir(opts.ModelDir)
-		if err != nil {
-			return "", "", fmt.Errorf("hashing model directory: %w", err)
+		if revision == "" {
+			if revision, err = resolveHFRevision(name, opts.HFToken); err != nil {
+				return "", "", "", err
+			}
+			fmt.Printf("Resolved %s default branch HEAD -> %s\n", name, revision)
 		}
-		if model == "" {
+		modelDir = filepath.Join(opts.CacheDir, name, revision)
+	} else {
+		if fi, err := os.Stat(opts.ModelDir); err != nil || !fi.IsDir() {
+			return "", "", "", fmt.Errorf("MODEL_DIR is not a directory: %s", opts.ModelDir)
+		}
+		if name == "" {
 			abs, err := filepath.Abs(opts.ModelDir)
 			if err != nil {
-				return "", "", err
+				return "", "", "", err
 			}
-			name := filepath.Base(abs)
-			if name == "/" || name == "." {
+			name = filepath.Base(abs)
+			if name == "/" {
 				name = "model"
 			}
-			model = name + "@" + localRevision
-		} else if !strings.Contains(model, "@") {
-			model = model + "@" + localRevision
 		}
-		if err := validateResolvedModel(model); err != nil {
-			return "", "", err
+		if revision == "" {
+			if revision, err = modelwrap.HashDir(opts.ModelDir); err != nil {
+				return "", "", "", fmt.Errorf("hashing model directory: %w", err)
+			}
 		}
-		return model, opts.ModelDir, nil
+		modelDir = opts.ModelDir
 	}
 
-	if model == "" {
-		return "", "", fmt.Errorf("model argument or MODEL environment variable is required")
-	}
-	if !strings.Contains(model, "@") {
-		sha, err := resolveHFRevision(model, opts.HFToken)
-		if err != nil {
-			return "", "", err
-		}
-		fmt.Printf("Resolved %s default branch HEAD -> %s\n", model, sha)
-		model = model + "@" + sha
-	}
-	if err := validateResolvedModel(model); err != nil {
-		return "", "", err
-	}
-	return model, filepath.Join(opts.CacheDir, strings.Replace(model, "@", "/", 1)), nil
-}
-
-// validateResolvedModel gates every resolved model identity — explicit
-// user revisions included — through the same validation --delete
-// enforces, before Pack writes anything. Nothing can be packed that
-// deletion would later reject, and no revision can smuggle in the
-// staged-name grammar's ".." anchor.
-func validateResolvedModel(model string) error {
-	name, revision, _ := strings.Cut(model, "@")
-	return validatePinnedModel(name, revision)
+	// Every resolved model identity — explicit user revisions included —
+	// goes through the same validation --delete enforces, before Pack
+	// writes anything. Nothing can be packed that deletion would later
+	// reject, and no revision can smuggle in the staged-name grammar's
+	// ".." anchor.
+	return name, revision, modelDir, validatePinnedModel(name, revision)
 }
 
 // resolveHFRevision resolves the default branch HEAD commit of a Hugging
